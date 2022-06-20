@@ -1,0 +1,17 @@
+{
+  "name": "day1",
+  "version": "1.0.0",
+  "description": "first chai mocha",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test",
+    "coverage": "nyc --reporter=html npm run test"
+  },
+  "author": "swikar",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "mocha": "^10.0.0",
+    "nyc": "^15.1.0"
+  }
+}

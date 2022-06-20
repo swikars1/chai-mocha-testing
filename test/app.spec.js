@@ -1,45 +1,61 @@
-const assert = require('assert');
-const { expect } = require('chai');
-const { add, sub } = require('../src/app')
+const { User } = require('../src/app');
+const axios = require('axios');
+const chai = require('chai');
+const sinon = require('sinon')
+const sinonChai = require('sinon-chai')
 
-describe('the add function', function () {
-  it('should add 2 function together', function () {
-    const result = add(2, 2)
-    expect(result).to.be.eq(4);
-  })
-  it('should be able to handle one number', function () {
-    const result = add(2);
-    expect(result).to.be.eq(2);
-  })
+const expect = chai.expect;
+chai.use(sinonChai)
 
-  it('should be handle no inputs', function () {
-    const result = add();
-    expect(result).to.be.eq(0);
-  })
+describe('the user class', function () {
+  const sandbox = sinon.createSandbox();
+  let user;
+  const GITHUB_TEST_USERNAME = 'swikars1'
 
-  it('should return zero if either arg is not a number', function () {
-    const result = add('a', 2);
-    expect(result).to.be.eq(0);
-  })
-})
-
-describe('the subtract function', function () {
-  it('should subtract 2 numbers together', function () {
-    const result = sub(2, 2)
-    expect(result).to.be.eq(0);
-  })
-  it('should be able to handle one number', function () {
-    const result = sub(2);
-    expect(result).to.be.eq(2);
+  beforeEach(function () {
+    user = new User(GITHUB_TEST_USERNAME)
   })
 
-  it('should be handle no inputs', function () {
-    const result = sub();
-    expect(result).to.be.eq(0);
+  afterEach(function () {
+    sandbox.restore();
   })
 
-  it('should return zero if either arg is not a number', function () {
-    const result = sub('a', 2);
-    expect(result).to.be.eq(0);
+  it('should constructor work set values required values', function () {
+    expect(user.username).to.be.eq(GITHUB_TEST_USERNAME)
+    expect(user.canViewRepos).to.eq(false)
+  })
+
+  it('should get user id', function (done) {
+    const getStub = sandbox.stub(axios, 'get').resolves({ data: { id: 123 } })
+    user.getUserId().then(result => {
+      expect(result).to.be.a('number')
+      expect(result).to.be.eq(123)
+      expect(getStub).to.have.been.calledOnce
+      expect(getStub).to.have.been.calledWith(`https://api.github.com/users/${GITHUB_TEST_USERNAME}`)
+      done()
+    })
+      .catch(done)
+  })
+
+  it('should return a repo if user can view repos', function (done) {
+    const getStub = sandbox.stub(axios, 'get').resolves({ data: ['repo1', 'repo2', 'repo3'] })
+    sandbox.stub(user, 'canViewRepos').value(true)
+    user.getUserRepo(2).then(response => {
+      expect(response).to.be.eq('repo3')
+      expect(getStub).to.have.been.calledOnceWith(`https://api.github.com/users/${GITHUB_TEST_USERNAME}/repos`)
+      done()
+    }).catch(done)
+  })
+
+  it('should return an error if user cant view the repo', function (done) {
+    const getStub = sandbox.stub(axios, 'get')
+    sandbox.stub(user, 'canViewRepos').value(false)
+
+    user.getUserRepo(2).catch(e => {
+      expect(e).to.be.eq('Cannot view repos')
+      expect(getStub).to.not.have.been.called
+      done()
+    })
+
   })
 })
